@@ -1,6 +1,6 @@
-import mongoose from "monggose";
+import mongoose from "mongoose";
 
-const watchlistSchema = new monggose.Schema({
+const watchlistSchema = new mongoose.Schema({
     userId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",

@@ -17,6 +17,8 @@ function MovieDetail() {
     const [form, setForm] = useState({ rating: 5, review: "" });
     const [submitting, setSubmitting] = useState(false);
     const [submitSuccess, setSubmitSuccess] = useState(false);
+    const [inWatchlist, setInWatchlist] = useState(false);
+    const [watchlistLoading, setWatchlistLoading] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -29,14 +31,16 @@ function MovieDetail() {
                 setRatings(ratingsRes.data);
             } catch (err) {
                 setError("Gagal memuat detail film");
-                return;
-            } finally {
                 setLoading(false);
+                return;
             }
 
             if (user) {
                 try {
-                    const userRatingRes = await api.get(`/ratings/user/${id}`);
+                    const [userRatingRes, watchlistCheckRes] = await Promise.all([
+                        api.get(`/ratings/user/${id}`),
+                        api.get(`/profile/watchlist/${id}/check`)
+                    ]);
                     if (userRatingRes.data) {
                         setUserRating(userRatingRes.data);
                         setForm({
@@ -44,11 +48,37 @@ function MovieDetail() {
                             review: userRatingRes.data.review
                         });
                     }
-                } catch (err) { }
+                    setInWatchlist(watchlistCheckRes.data.inWatchlist);
+                } catch (err) {
+                    console.error("Gagal memuat data relasi user-film", err);
+                }
             }
+            setLoading(false);
         };
         fetchData();
     }, [id, user]);
+
+    const handleToggleWatchlist = async () => {
+        if (!movie) return;
+        setWatchlistLoading(true);
+        try {
+            if (inWatchlist) {
+                await api.delete(`/profile/watchlist/${movie.id}`);
+                setInWatchlist(false);
+            } else {
+                await api.post("/profile/watchlist", {
+                    movieId: movie.id,
+                    title: movie.title,
+                    posterPath: movie.poster_path,
+                });
+                setInWatchlist(true);
+            }
+        } catch (err) {
+            alert("Gagal mengubah watchlist");
+        } finally {
+            setWatchlistLoading(false);
+        }
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -59,8 +89,14 @@ function MovieDetail() {
                 rating: form.rating,
                 review: form.review
             });
-            const ratingsRes = await api.get(`/ratings/movie/${id}`);
+            const [ratingsRes, userRatingRes] = await Promise.all([
+                api.get(`/ratings/movie/${id}`),
+                api.get(`/ratings/user/${id}`)
+            ]);
             setRatings(ratingsRes.data);
+            if (userRatingRes.data) {
+                setUserRating(userRatingRes.data);
+            }
             setSubmitSuccess(true);
             setTimeout(() => setSubmitSuccess(false), 3000);
         } catch (err) {
@@ -136,6 +172,25 @@ function MovieDetail() {
                             ))}
                         </div>
                         <p className="text-gray-300 mt-4 leading-relaxed">{movie.overview}</p>
+
+                        {user && (
+                            <button
+                                id="watchlist-toggle-btn"
+                                onClick={handleToggleWatchlist}
+                                disabled={watchlistLoading}
+                                className={`mt-5 px-5 py-2 rounded-full font-medium text-sm transition-colors disabled:opacity-50 ${
+                                    inWatchlist
+                                        ? "bg-gray-700 text-gray-300 hover:bg-red-500/20 hover:text-red-400"
+                                        : "bg-yellow-400 text-gray-900 hover:bg-yellow-300"
+                                }`}
+                            >
+                                {watchlistLoading
+                                    ? "..."
+                                    : inWatchlist
+                                    ? "✓ Di Watchlist"
+                                    : "+ Tambah ke Watchlist"}
+                            </button>
+                        )}
                     </div>
                 </div>
 
