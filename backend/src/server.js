@@ -1,9 +1,10 @@
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
-import movieRoutes from "./routes/movieRoutes.js";
+import movieRoutes from "./routes/MovieRoutes.js";
 import connectDB from "./config/db.js";
-import authRoutes from "./routes/authRoutes.js";
+import authRoutes from "./routes/AuthRoutes.js";
+import ratingRoutes from "./routes/ratingRoutes.js";
 
 dotenv.config();
 connectDB();
@@ -17,6 +18,7 @@ app.use(express.json());
 
 app.use("/api/movies", movieRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/ratings", ratingRoutes);
 
 app.get("/", (req, res) => {
     res.json({ message: "Server backend jalan!" });
