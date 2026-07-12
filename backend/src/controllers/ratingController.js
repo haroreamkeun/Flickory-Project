@@ -2,18 +2,19 @@ import Rating from "../models/Rating.js";
 
 export const addRating = async (req, res) => {
     try {
-        const { movieId, rating, review } = req.body;
+        const { movieId, rating, review, isSpoiler } = req.body;
         const userId = req.user.id;
 
         const existingRating = await Rating.findOne({ userId, movieId });
         if (existingRating) {
             existingRating.rating = rating;
             existingRating.review = review;
+            existingRating.isSpoiler = isSpoiler || false;
             await existingRating.save();
             return res.json(existingRating);
         }
 
-        const newRating = await Rating.create({ userId, movieId, rating, review });
+        const newRating = await Rating.create({ userId, movieId, rating, review, isSpoiler: isSpoiler || false });
         res.status(201).json(newRating);
     } catch (error) {
         res.status(500).json({ message: error.message });

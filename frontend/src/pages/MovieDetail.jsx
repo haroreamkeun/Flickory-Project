@@ -6,6 +6,25 @@ import { useAuth } from "../context/AuthContext";
 const IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500";
 const BACKDROP_BASE_URL = "https://image.tmdb.org/t/p/original";
 
+function SpoilerText({ text }) {
+    const [revealed, setRevealed] = useState(false);
+    return (
+        <div className="relative">
+            <p className={`text-gray-300 text-sm ${!revealed ? "blur-sm select-none" : ""}`}>
+                {text}
+            </p>
+            {!revealed && (
+                <button
+                    onClick={() => setRevealed(true)}
+                    className="absolute inset-0 flex items-center justify-center text-yellow-400 text-sm font-medium hover:text-yellow-300"
+                >
+                    ⚠️ Spoiler — Klik untuk lihat
+                </button>
+            )}
+        </div>
+    );
+}
+
 function MovieDetail() {
     const { id } = useParams();
     const { user } = useAuth();
@@ -14,10 +33,10 @@ function MovieDetail() {
     const [error, setError] = useState(null);
     const [ratings, setRatings] = useState([]);
     const [userRating, setUserRating] = useState(null);
-    const [form, setForm] = useState({ rating: 5, review: "" });
+    const [form, setForm] = useState({ rating: 5, review: "", isSpoiler: false });
     const [submitting, setSubmitting] = useState(false);
     const [submitSuccess, setSubmitSuccess] = useState(false);
-    const [inWatchlist, setInWatchlist] = useState(false);
+    const [isInWatchlist, setIsInWatchlist] = useState(false);
     const [watchlistLoading, setWatchlistLoading] = useState(false);
 
     useEffect(() => {
@@ -31,54 +50,32 @@ function MovieDetail() {
                 setRatings(ratingsRes.data);
             } catch (err) {
                 setError("Gagal memuat detail film");
-                setLoading(false);
                 return;
+            } finally {
+                setLoading(false);
             }
 
             if (user) {
                 try {
-                    const [userRatingRes, watchlistCheckRes] = await Promise.all([
-                        api.get(`/ratings/user/${id}`),
-                        api.get(`/profile/watchlist/${id}/check`)
-                    ]);
+                    const userRatingRes = await api.get(`/ratings/user/${id}`);
                     if (userRatingRes.data) {
                         setUserRating(userRatingRes.data);
                         setForm({
                             rating: userRatingRes.data.rating,
-                            review: userRatingRes.data.review
+                            review: userRatingRes.data.review,
+                            isSpoiler: userRatingRes.data.isSpoiler || false
                         });
                     }
-                    setInWatchlist(watchlistCheckRes.data.inWatchlist);
-                } catch (err) {
-                    console.error("Gagal memuat data relasi user-film", err);
-                }
+                } catch (err) { }
+
+                try {
+                    const watchlistRes = await api.get(`/watchlist/check/${id}`);
+                    setIsInWatchlist(watchlistRes.data.isInWatchlist);
+                } catch (err) { }
             }
-            setLoading(false);
         };
         fetchData();
     }, [id, user]);
-
-    const handleToggleWatchlist = async () => {
-        if (!movie) return;
-        setWatchlistLoading(true);
-        try {
-            if (inWatchlist) {
-                await api.delete(`/profile/watchlist/${movie.id}`);
-                setInWatchlist(false);
-            } else {
-                await api.post("/profile/watchlist", {
-                    movieId: movie.id,
-                    title: movie.title,
-                    posterPath: movie.poster_path,
-                });
-                setInWatchlist(true);
-            }
-        } catch (err) {
-            alert("Gagal mengubah watchlist");
-        } finally {
-            setWatchlistLoading(false);
-        }
-    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -87,16 +84,11 @@ function MovieDetail() {
             await api.post("/ratings", {
                 movieId: Number(id),
                 rating: form.rating,
-                review: form.review
+                review: form.review,
+                isSpoiler: form.isSpoiler
             });
-            const [ratingsRes, userRatingRes] = await Promise.all([
-                api.get(`/ratings/movie/${id}`),
-                api.get(`/ratings/user/${id}`)
-            ]);
+            const ratingsRes = await api.get(`/ratings/movie/${id}`);
             setRatings(ratingsRes.data);
-            if (userRatingRes.data) {
-                setUserRating(userRatingRes.data);
-            }
             setSubmitSuccess(true);
             setTimeout(() => setSubmitSuccess(false), 3000);
         } catch (err) {
@@ -113,7 +105,7 @@ function MovieDetail() {
             const ratingsRes = await api.get(`/ratings/movie/${id}`);
             setRatings(ratingsRes.data);
             setUserRating(null);
-            setForm({ rating: 5, review: "" });
+            setForm({ rating: 5, review: "", isSpoiler: false });
         } catch (err) {
             console.error(err);
         }
@@ -126,6 +118,28 @@ function MovieDetail() {
             setRatings(ratings.map(r => r._id === ratingId ? res.data : r));
         } catch (err) {
             console.error(err);
+        }
+    };
+
+    const handleWatchlist = async () => {
+        if (!user) return;
+        setWatchlistLoading(true);
+        try {
+            if (isInWatchlist) {
+                await api.delete(`/watchlist/${id}`);
+                setIsInWatchlist(false);
+            } else {
+                await api.post("/watchlist", {
+                    movieId: Number(id),
+                    movieTitle: movie.title,
+                    posterPath: movie.poster_path
+                });
+                setIsInWatchlist(true);
+            }
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setWatchlistLoading(false);
         }
     };
 
@@ -175,20 +189,14 @@ function MovieDetail() {
 
                         {user && (
                             <button
-                                id="watchlist-toggle-btn"
-                                onClick={handleToggleWatchlist}
+                                onClick={handleWatchlist}
                                 disabled={watchlistLoading}
-                                className={`mt-5 px-5 py-2 rounded-full font-medium text-sm transition-colors disabled:opacity-50 ${
-                                    inWatchlist
-                                        ? "bg-gray-700 text-gray-300 hover:bg-red-500/20 hover:text-red-400"
-                                        : "bg-yellow-400 text-gray-900 hover:bg-yellow-300"
-                                }`}
+                                className={`mt-4 px-6 py-2 rounded-full font-medium text-sm transition-colors disabled:opacity-50 ${isInWatchlist
+                                    ? "bg-yellow-400 text-gray-900 hover:bg-yellow-300"
+                                    : "border border-gray-600 text-gray-300 hover:border-yellow-400 hover:text-yellow-400"
+                                    }`}
                             >
-                                {watchlistLoading
-                                    ? "..."
-                                    : inWatchlist
-                                    ? "✓ Di Watchlist"
-                                    : "+ Tambah ke Watchlist"}
+                                {watchlistLoading ? "..." : isInWatchlist ? "✓ Di Watchlist" : "+ Tambah ke Watchlist"}
                             </button>
                         )}
                     </div>
@@ -239,6 +247,19 @@ function MovieDetail() {
                                 />
                             </div>
 
+                            <div className="mb-4 flex items-center gap-3">
+                                <input
+                                    type="checkbox"
+                                    id="isSpoiler"
+                                    checked={form.isSpoiler}
+                                    onChange={(e) => setForm({ ...form, isSpoiler: e.target.checked })}
+                                    className="w-4 h-4 accent-yellow-400"
+                                />
+                                <label htmlFor="isSpoiler" className="text-gray-400 text-sm cursor-pointer">
+                                    ⚠️ Review ini mengandung spoiler
+                                </label>
+                            </div>
+
                             <button
                                 type="submit"
                                 disabled={submitting}
@@ -262,9 +283,16 @@ function MovieDetail() {
                             ratings.map((r) => (
                                 <div key={r._id} className="bg-gray-900 rounded-xl p-5">
                                     <div className="flex items-center justify-between mb-2">
-                                        <span className="text-white font-medium">
-                                            👤 {r.userId?.username || "User"}
-                                        </span>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-white font-medium">
+                                                👤 {r.userId?.username || "User"}
+                                            </span>
+                                            {r.isSpoiler && (
+                                                <span className="bg-yellow-400/20 text-yellow-400 text-xs px-2 py-0.5 rounded-full">
+                                                    ⚠️ Spoiler
+                                                </span>
+                                            )}
+                                        </div>
                                         <div className="flex items-center gap-3">
                                             <span className="text-yellow-400">
                                                 {"★".repeat(r.rating)}{"☆".repeat(5 - r.rating)}
@@ -281,7 +309,13 @@ function MovieDetail() {
                                     </div>
 
                                     {r.review && (
-                                        <p className="text-gray-300 text-sm mb-3">{r.review}</p>
+                                        <div className="mb-3">
+                                            {r.isSpoiler ? (
+                                                <SpoilerText text={r.review} />
+                                            ) : (
+                                                <p className="text-gray-300 text-sm">{r.review}</p>
+                                            )}
+                                        </div>
                                     )}
 
                                     <div className="flex gap-4 mt-2">

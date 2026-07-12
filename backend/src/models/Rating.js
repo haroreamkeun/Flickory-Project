@@ -20,6 +20,10 @@ const ratingSchema = new mongoose.Schema({
         type: String,
         default: ""
     },
+    isSpoiler: {
+        type: Boolean,
+        default: false
+    },
     likes: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: "User"

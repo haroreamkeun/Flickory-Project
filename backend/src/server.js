@@ -6,6 +6,7 @@ import connectDB from "./config/db.js";
 import authRoutes from "./routes/AuthRoutes.js";
 import ratingRoutes from "./routes/ratingRoutes.js";
 import profileRoutes from "./routes/profileRoutes.js";
+import watchlistRoutes from "./routes/watchlistRoutes.js";
 
 dotenv.config();
 connectDB();
@@ -21,6 +22,7 @@ app.use("/api/movies", movieRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/ratings", ratingRoutes);
 app.use("/api/profile", profileRoutes);
+app.use("/api/watchlist", watchlistRoutes);
 
 app.get("/", (req, res) => {
     res.json({ message: "Server backend jalan!" });
