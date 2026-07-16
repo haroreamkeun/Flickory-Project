@@ -3,6 +3,7 @@ import Watchlist from "../models/Watchlist.js";
 export const addToWatchlist = async (req, res) => {
     try {
         const { movieId, movieTitle, posterPath } = req.body;
+        console.log("Data diterima:", { movieId, movieTitle, posterPath });
         const userId = req.user.id;
 
         const existing = await Watchlist.findOne({ userId, movieId });
@@ -13,6 +14,7 @@ export const addToWatchlist = async (req, res) => {
         const item = await Watchlist.create({ userId, movieId, movieTitle, posterPath });
         res.status(201).json(item);
     } catch (error) {
+        console.log("Error:", error.message);
         res.status(500).json({ message: error.message });
     }
 };

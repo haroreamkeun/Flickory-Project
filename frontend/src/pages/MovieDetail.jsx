@@ -69,8 +69,8 @@ function MovieDetail() {
                 } catch (err) { }
 
                 try {
-                    const watchlistRes = await api.get(`/watchlist/check/${id}`);
-                    setIsInWatchlist(watchlistRes.data.isInWatchlist);
+                    const watchlistRes = await api.get(`/profile/watchlist/${id}/check`);
+                    setIsInWatchlist(watchlistRes.data.inWatchlist);
                 } catch (err) { }
             }
         };
@@ -126,12 +126,12 @@ function MovieDetail() {
         setWatchlistLoading(true);
         try {
             if (isInWatchlist) {
-                await api.delete(`/watchlist/${id}`);
+                await api.delete(`/profile/watchlist/${id}`);
                 setIsInWatchlist(false);
             } else {
-                await api.post("/watchlist", {
+                await api.post("/profile/watchlist", {
                     movieId: Number(id),
-                    movieTitle: movie.title,
+                    title: movie.title,
                     posterPath: movie.poster_path
                 });
                 setIsInWatchlist(true);

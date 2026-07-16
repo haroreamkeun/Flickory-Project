@@ -31,7 +31,7 @@ function Profile() {
                     api.get("/profile/ratings"),
                     api.get("/profile/watchlist"),
                 ]);
-                setProfile(profileRes.data);
+                setProfile(profileRes.data); a
                 setRatings(ratingsRes.data);
                 setWatchlist(watchlistRes.data);
             } catch (err) {
@@ -142,22 +142,20 @@ function Profile() {
                     <button
                         id="tab-ratings"
                         onClick={() => setActiveTab("ratings")}
-                        className={`px-6 py-2 rounded-lg font-medium text-sm transition-colors ${
-                            activeTab === "ratings"
+                        className={`px-6 py-2 rounded-lg font-medium text-sm transition-colors ${activeTab === "ratings"
                                 ? "bg-yellow-400 text-gray-900"
                                 : "text-gray-400 hover:text-white"
-                        }`}
+                            }`}
                     >
                         🎬 Rating Saya
                     </button>
                     <button
                         id="tab-watchlist"
                         onClick={() => setActiveTab("watchlist")}
-                        className={`px-6 py-2 rounded-lg font-medium text-sm transition-colors ${
-                            activeTab === "watchlist"
+                        className={`px-6 py-2 rounded-lg font-medium text-sm transition-colors ${activeTab === "watchlist"
                                 ? "bg-yellow-400 text-gray-900"
                                 : "text-gray-400 hover:text-white"
-                        }`}
+                            }`}
                     >
                         📋 Watchlist
                     </button>
