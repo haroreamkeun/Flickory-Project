@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 
 const connectDB = async () => {
     try {
+        console.log("MONGO_URI:", process.env.MONGO_URI);
         const conn = await mongoose.connect(process.env.MONGO_URI);
         console.log(`MongoDB terhubung: ${conn.connection.host}`);
     } catch (error) {
@@ -10,4 +11,4 @@ const connectDB = async () => {
     }
 };
 
-export default connectDB; 
+export default connectDB;
