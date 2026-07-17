@@ -31,7 +31,7 @@ function Profile() {
                     api.get("/profile/ratings"),
                     api.get("/profile/watchlist"),
                 ]);
-                setProfile(profileRes.data); a
+                setProfile(profileRes.data);
                 setRatings(ratingsRes.data);
                 setWatchlist(watchlistRes.data);
             } catch (err) {
